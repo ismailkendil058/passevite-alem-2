@@ -832,7 +832,7 @@ const Rendezvous = () => {
         return { history, appts };
     };
 
-    const getPatientTreatments = (clientId: string) => {
+    const getPatientTreatments = (clientId: string, phone: string) => {
         const entries = clients.filter(c => (c.client_id || c.phone) === clientId);
         const map = new Map<string, { entries: CompletedClient[]; totalPaid: number; latestTotal: number; latestTs: number }>();
         entries.forEach(e => {
@@ -1158,7 +1158,7 @@ const Rendezvous = () => {
                             <Dialog open={!!viewingPatient} onOpenChange={(open) => !open && setViewingPatient(null)}>
                                 <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden sm:rounded-2xl">
                                     {viewingPatient && (() => {
-                                        const patientData = getPatientTreatments(viewingPatient.id || viewingPatient.phone);
+                                        const patientData = getPatientTreatments(viewingPatient.id || viewingPatient.phone, viewingPatient.phone);
                                         const treatments = patientData.treatments;
                                         const chosen = selectedTreatment || (treatments[0] && treatments[0].treatment) || null;
                                         const entriesForChosen = treatments.find(t => t.treatment === chosen)?.entries || [];
@@ -1684,9 +1684,9 @@ const Rendezvous = () => {
                                                 )}
 
                                                 {/* Doctor Columns */}
-                                                <div className="ml-8 flex sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 min-h-full pb-10">
+                                                <div className="ml-8 flex flex-col gap-4 min-h-full pb-10">
                                                     {doctors.map(doctor => (
-                                                        <div key={doctor.id} className="relative min-h-[2000px] w-[280px] shrink-0 sm:shrink sm:w-auto rounded-2xl bg-muted/5 border border-primary/5 overflow-hidden group/col">
+                                                        <div key={doctor.id} className="relative min-h-[2000px] w-full rounded-2xl bg-muted/5 border border-primary/5 overflow-hidden group/col">
                                                             {/* Column Sticky Header */}
                                                             <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/40 backdrop-blur-md p-3 border-b border-primary/5 text-center group-hover/col:bg-primary/5 transition-colors">
                                                                 <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em] mb-0.5 opacity-60">Cabinet</p>
