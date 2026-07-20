@@ -1,27 +1,16 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import { Monitor, UserCog, Sparkles, Tv, UserCheck, FlaskConical, Globe, Star, CreditCard, Package } from 'lucide-react';
-
+import { Monitor, UserCheck, UserCog } from 'lucide-react';
 
 const Index = () => {
   const sections = [
-    { title: 'Accueil', description: 'Gestion de la reception et de la file', icon: Monitor, href: '/accueil/login', variant: 'outline' as const },
-    { title: 'Manager', description: 'Tableau de bord analytique', icon: UserCog, href: '/manager/login', variant: 'outline' as const },
-    { title: 'Docteur', description: 'Tableau de bord de soins', icon: UserCheck, href: '/doctor/login', variant: 'outline' as const },
-    { title: 'Laboratoire', description: 'Suivi des envois & prothèses', icon: FlaskConical, href: '/labo', variant: 'outline' as const },
-    { title: 'Site Web', description: 'Présentation de la clinique', icon: Globe, href: '/website', variant: 'outline' as const },
-    { title: 'Rendez-vous', description: 'Réservations du site web', icon: Sparkles, href: '/appointment/login', variant: 'outline' as const },
-    { title: 'Télévision', description: 'Affichage de la file d\'attente', icon: Tv, href: '/tv', variant: 'outline' as const },
-    { title: 'Avis Patient', description: 'Formulaire de satisfaction', icon: Star, href: '/review', variant: 'outline' as const },
-    { title: 'E-Carte Patient', description: 'Suivi de soins & paiements', icon: CreditCard, href: '/patient', variant: 'outline' as const },
-    { title: 'Inventaire', description: 'Gestion du stock & consommables', icon: Package, href: '/inventaire/login', variant: 'outline' as const },
-
-
+    { title: 'Accueil', description: 'Gestion de la reception et de la file', icon: Monitor, href: '/accueil' },
+    { title: 'Manager', description: 'Tableau de bord analytique', icon: UserCog, href: '/manager' },
+    { title: 'Doctor', description: 'Tableau de bord de soins', icon: UserCheck, href: '/doctor' },
   ];
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Decorative Background Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[100px] animate-fade-in gpu" />
       <div
         className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[100px] animate-fade-in gpu"
@@ -52,7 +41,7 @@ const Index = () => {
             <Card className="border border-white/40 dark:border-white/5 shadow-xl shadow-primary/5 hover:shadow-primary/10 transition-all duration-300 cursor-pointer group h-full bg-white/50 dark:bg-black/20 backdrop-blur-sm active:scale-95">
               <CardContent className="p-4 sm:p-6 flex flex-col items-center text-center space-y-3 sm:space-y-4 h-full justify-center">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary/5 flex items-center justify-center group-hover:bg-primary group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
-                  <Icon className="h-6 w-6 sm:h-7 sm:w-7 text-primary group-hover:text-primary-foreground transition-colors" />
+                  <Icon className="icon-center h-6 w-6 sm:h-7 sm:w-7 text-primary group-hover:text-primary-foreground transition-colors" />
                 </div>
                 <div className="space-y-1">
                   <h2 className="font-bold text-foreground text-sm sm:text-lg group-hover:text-primary transition-colors">{title}</h2>

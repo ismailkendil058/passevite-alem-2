@@ -71,10 +71,15 @@ const MedecinDashboard = () => {
         const authData = localStorage.getItem('doctor_auth');
         if (authData) {
             setDoctorInfo(JSON.parse(authData));
-        } else {
-            navigate('/doctor/login');
+        } else if (doctors.length > 0) {
+            const defaultDoctor = {
+                id: doctors[0].id,
+                name: doctors[0].name,
+            };
+            localStorage.setItem('doctor_auth', JSON.stringify(defaultDoctor));
+            setDoctorInfo(defaultDoctor);
         }
-    }, [navigate]);
+    }, [doctors]);
 
     // DASHBOARD DATA
     const [prescriptions, setPrescriptions] = useState<any[]>([]);

@@ -53,7 +53,7 @@ const OrdonnancePage = () => {
         if (authData) {
             setDoctorInfo(JSON.parse(authData));
         } else {
-            navigate('/doctor/login');
+            navigate('/doctor');
         }
     }, [navigate]);
 

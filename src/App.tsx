@@ -8,8 +8,6 @@ import DynamicManifest from "./components/DynamicManifest";
 
 // Lazy load pages for better performance
 const Index = lazy(() => import("./pages/Index"));
-const LoginAccueil = lazy(() => import("./pages/LoginAccueil"));
-const LoginManager = lazy(() => import("./pages/LoginManager"));
 const Website = lazy(() => import("./pages/Website"));
 const Accueil = lazy(() => import("./pages/Accueil"));
 const Client = lazy(() => import("./pages/Client"));
@@ -25,7 +23,6 @@ const AjouterFacture = lazy(() => import("./pages/AjouterFacture"));
 const Appointment = lazy(() => import("./pages/Appointment"));
 const LoginAppointment = lazy(() => import("./pages/LoginAppointment"));
 const TV = lazy(() => import("./pages/TV"));
-const LoginMedecin = lazy(() => import("./pages/LoginMedecin"));
 const MedecinDashboard = lazy(() => import("./pages/MedecinDashboard"));
 const UserManager = lazy(() => import("./pages/UserManager"));
 const LaboPage = lazy(() => import("./pages/LaboPage"));
@@ -63,12 +60,12 @@ function ProtectedRoute({ children, requiredRoles }: { children: React.ReactNode
   if (!user) {
     const path = window.location.pathname;
     if (path.startsWith('/appointment')) return <Navigate to="/appointment/login" replace />;
-    if (path.startsWith('/accueil')) return <Navigate to="/accueil/login" replace />;
-    if (path.startsWith('/manager')) return <Navigate to="/manager/login" replace />;
+    if (path.startsWith('/accueil')) return <Navigate to="/accueil" replace />;
+    if (path.startsWith('/manager')) return <Navigate to="/manager" replace />;
 
     // Fallback based on required roles if path didn't match
-    if (requiredRoles?.includes('receptionist')) return <Navigate to="/accueil/login" replace />;
-    if (requiredRoles?.includes('manager')) return <Navigate to="/manager/login" replace />;
+    if (requiredRoles?.includes('receptionist')) return <Navigate to="/accueil" replace />;
+    if (requiredRoles?.includes('manager')) return <Navigate to="/manager" replace />;
     return <Navigate to="/" replace />;
   }
 
@@ -94,8 +91,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/website" element={<Website />} />
-            <Route path="/accueil/login" element={<LoginAccueil />} />
-            <Route path="/manager/login" element={<LoginManager />} />
+            <Route path="/accueil/login" element={<Navigate to="/accueil" replace />} />
+            <Route path="/manager/login" element={<Navigate to="/manager" replace />} />
             <Route path="/appointment/login" element={<LoginAppointment />} />
             <Route path="/inventaire/login" element={<LoginInventaire />} />
 
@@ -137,7 +134,7 @@ const App = () => (
               <ProtectedRoute requiredRoles={['manager', 'admin']}><Appointment /></ProtectedRoute>
             } />
             <Route path="/tv" element={<TV />} />
-            <Route path="/doctor/login" element={<LoginMedecin />} />
+            <Route path="/doctor/login" element={<Navigate to="/doctor" replace />} />
             <Route path="/doctor" element={
               <MedecinDashboard />
             } />

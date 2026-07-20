@@ -23,6 +23,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
+    const defaultUser = {
+      id: 'a44e7e83-189f-4f82-96d8-b0eeea4ab104',
+      email: 'manager@passevite.local',
+      username: 'manager',
+      role: 'manager'
+    };
+
     // Check localStorage for a manual session
     const savedUser = localStorage.getItem('passevite_user');
     if (savedUser) {
@@ -32,7 +39,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserRole(parsed.role);
       } catch (e) {
         console.error("Failed to parse saved user", e);
+        setUser(defaultUser);
+        setUserRole(defaultUser.role);
       }
+    } else {
+      setUser(defaultUser);
+      setUserRole(defaultUser.role);
     }
     setLoading(false);
   }, []);
