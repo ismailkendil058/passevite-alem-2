@@ -156,13 +156,6 @@ const MedecinDashboard = () => {
     }, [entries, doctorInfo]);
 
     const handleCallPatient = async (entry: QueueEntry) => {
-        const activeDoctorEntry = inCabinetEntries.find(e => e.doctor_id === entry.doctor_id);
-        if (activeDoctorEntry) {
-            const activeName = activeDoctorEntry.patient_name || activeDoctorEntry.phone;
-            toast.error(`Vous avez déjà un patient au cabinet (${activeName}).`);
-            return;
-        }
-
         const { error } = await callClient(entry.id);
         if (error) {
             toast.error("Erreur lors de l'appel du patient");

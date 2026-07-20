@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,7 +29,6 @@ interface CompletedClient {
 
 const Manager = () => {
 
-  const { signOut } = useAuth();
   const [clients, setClients] = useState<CompletedClient[]>([]);
   const [doctors, setDoctors] = useState<{ id: string; name: string }[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -200,7 +198,11 @@ const Manager = () => {
               <span className="hidden sm:inline">Accès</span>
             </Link>
           </Button>
-          <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8 hover:text-rose-500 transition-colors"><LogOut className="h-4 w-4" /></Button>
+          <Button asChild variant="ghost" size="icon" className="h-8 w-8 hover:text-primary transition-colors">
+            <Link to="/accueil">
+              <LogOut className="h-4 w-4" />
+            </Link>
+          </Button>
 
         </div>
       </header>

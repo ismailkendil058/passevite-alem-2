@@ -1,12 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import { Monitor, UserCheck, UserCog } from 'lucide-react';
+import { Monitor, UserCog } from 'lucide-react';
 
 const Index = () => {
   const sections = [
     { title: 'Accueil', description: 'Gestion de la reception et de la file', icon: Monitor, href: '/accueil' },
     { title: 'Manager', description: 'Tableau de bord analytique', icon: UserCog, href: '/manager' },
-    { title: 'Doctor', description: 'Tableau de bord de soins', icon: UserCheck, href: '/doctor' },
   ];
 
   return (
@@ -30,7 +29,7 @@ const Index = () => {
         <div className="h-1 w-12 bg-primary/20 mx-auto mt-6 rounded-full" />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 w-full max-w-7xl relative z-10 justify-center">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 w-full max-w-7xl relative z-10 justify-center">
         {sections.map(({ title, description, icon: Icon, href }, index) => (
           <Link
             key={href}

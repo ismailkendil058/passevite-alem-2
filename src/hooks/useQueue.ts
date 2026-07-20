@@ -403,14 +403,36 @@ export function useQueue() {
       total_amount: totalAmount,
       tranche_paid: tranchePaid,
       receptionist_id: receptionistId,
+      appointment_id: entry.appointment_id || null,
       notes: notes?.trim() || null,
     };
+
+    const duplicateQuery = supabase
+      .from('completed_clients')
+      .select('id')
+      .eq('session_id', insertData.session_id)
+      .eq('phone', insertData.phone)
+      .eq('doctor_id', insertData.doctor_id)
+      .eq('client_id', insertData.client_id)
+      .eq('state', insertData.state)
+      .eq('treatment', insertData.treatment)
+      .limit(1);
+
+    const { data: existingCompletion } = insertData.appointment_id
+      ? await duplicateQuery.eq('appointment_id', insertData.appointment_id).maybeSingle()
+      : await duplicateQuery.is('appointment_id', null).maybeSingle();
+
+    if (existingCompletion) {
+      await supabase.from('queue_entries').delete().eq('id', entryId);
+      removeEntryFromState(entryId);
+      return { error: null, alreadyCompleted: true };
+    }
 
     let { error: insertError } = await supabase.from('completed_clients').insert(insertData);
 
     // If we hit the inherited receptionist_id foreign key constraint from auth.users (due to custom roles migration)
     if (insertError && insertError.code === '23503' && insertError.message?.includes('receptionist_id')) {
-      insertData.receptionist_id = 'a44e7e83-189f-4f82-96d8-b0eeea4ab104';
+      insertData.receptionist_id = '46b5d691-39d9-4d19-b63b-8d778487cfd4';
       const retry = await supabase.from('completed_clients').insert(insertData);
       insertError = retry.error;
     }

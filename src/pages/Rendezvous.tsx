@@ -218,7 +218,7 @@ const Rendezvous = () => {
 
                 // Fallback for receptionist_id constraint if needed
                 if (error && error.code === '23503' && error.message?.includes('receptionist_id')) {
-                    treatmentData.receptionist_id = 'a44e7e83-189f-4f82-96d8-b0eeea4ab104';
+                    treatmentData.receptionist_id = '46b5d691-39d9-4d19-b63b-8d778487cfd4';
                     const retry = visit.id
                         ? await supabase.from('completed_clients').update(treatmentData).eq('id', visit.id)
                         : await supabase.from('completed_clients').insert(treatmentData);

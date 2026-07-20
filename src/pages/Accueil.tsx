@@ -123,7 +123,7 @@ const QueueItem = React.memo(({ entry, index, onEdit, onDelete, onNext }: { entr
 });
 
 const Accueil = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { entries, inCabinetEntries, doctors, loading, addClient, callClient, completeClient, updateClient, deleteClient, updateCompletedClient, deleteCompletedClient, returnToQueue } = useQueue();
 
   const [isManagerAuthorized, setIsManagerAuthorized] = useState(false);
@@ -457,14 +457,6 @@ const Accueil = () => {
   }, [isExistingPatient, existingPatientQuery]);
 
   const handleNext = async (entry: QueueEntry) => {
-    // Prevent calling a patient if the doctor already has someone in the cabinet
-    const activeDoctorEntry = inCabinetEntries.find(e => e.doctor_id === entry.doctor_id);
-    if (activeDoctorEntry) {
-      const activeName = activeDoctorEntry.patient_name || activeDoctorEntry.phone;
-      toast.error(`Le docteur ${entry.doctor?.name || ''} a déjà un patient au cabinet (${activeName}).`);
-      return;
-    }
-
     // Call client - move from waiting to in_cabinet
     const { error } = await callClient(entry.id);
     if (error) {
@@ -806,8 +798,11 @@ const Accueil = () => {
           </Link>
 
 
-          {/* Session close removed */}
-          <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8"><LogOut className="h-4 w-4" /></Button>
+          <Button asChild variant="ghost" size="icon" className="h-8 w-8 hover:text-primary transition-colors">
+            <Link to="/manager">
+              <LogOut className="h-4 w-4" />
+            </Link>
+          </Button>
         </div>
       </header>
 

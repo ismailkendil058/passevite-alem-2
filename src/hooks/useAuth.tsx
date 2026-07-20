@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const defaultUser = {
-      id: 'a44e7e83-189f-4f82-96d8-b0eeea4ab104',
+      id: '46b5d691-39d9-4d19-b63b-8d778487cfd4',
       email: 'manager@passevite.local',
       username: 'manager',
       role: 'manager'
