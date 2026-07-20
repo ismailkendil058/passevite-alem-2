@@ -40,7 +40,7 @@ const Index = () => {
             <Card className="border border-white/40 dark:border-white/5 shadow-xl shadow-primary/5 hover:shadow-primary/10 transition-all duration-300 cursor-pointer group h-full bg-white/50 dark:bg-black/20 backdrop-blur-sm active:scale-95">
               <CardContent className="p-4 sm:p-6 flex flex-col items-center text-center space-y-3 sm:space-y-4 h-full justify-center">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary/5 flex items-center justify-center group-hover:bg-primary group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
-                  <Icon className="icon-center h-6 w-6 sm:h-7 sm:w-7 text-primary group-hover:text-primary-foreground transition-colors" />
+                  <Icon className="h-6 w-6 sm:h-7 sm:w-7 text-primary group-hover:text-primary-foreground transition-colors" />
                 </div>
                 <div className="space-y-1">
                   <h2 className="font-bold text-foreground text-sm sm:text-lg group-hover:text-primary transition-colors">{title}</h2>

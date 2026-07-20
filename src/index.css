@@ -169,6 +169,10 @@ All colors MUST be HSL.
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  .icon-center {
+    @apply flex items-center justify-center;
+  }
 }
 
 @keyframes fadeIn {
