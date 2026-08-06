@@ -209,8 +209,9 @@ const MedecinDashboard = () => {
     const [tranchePaid, setTranchePaid] = useState('');
     const [totalPaidPreviously, setTotalPaidPreviously] = useState(0);
     const [completeNotes, setCompleteNotes] = useState('');
-    const [historyTreatments, setHistoryTreatments] = useState<Array<{ treatment: string; totalAmount: number; totalPaid: number }>>([]);
+    const [historyTreatments, setHistoryTreatments] = useState<Array<{ treatment: string; treatment_id: string; totalAmount: number; totalPaid: number }>>([]);
     const [selectedHistoryTreatment, setSelectedHistoryTreatment] = useState<string | null>(null);
+    const [selectedHistoryTreatmentId, setSelectedHistoryTreatmentId] = useState<string | null>(null);
     const [isCompletingClient, setIsCompletingClient] = useState(false);
 
     const [hasNextAppt, setHasNextAppt] = useState(false);
@@ -492,10 +493,10 @@ const MedecinDashboard = () => {
                     .order('completed_at', { ascending: false });
 
                 if (history && history.length > 0) {
-                    const map = new Map<string, { totalPaid: number; totalAmount: number; lastDate: number }>();
+                    const map = new Map<string, { treatment: string; treatment_id: string; totalPaid: number; totalAmount: number; lastDate: number }>();
                     history.forEach((item: any) => {
-                        const key = item.treatment || '—';
-                        const existing = map.get(key) || { totalPaid: 0, totalAmount: 0, lastDate: 0 };
+                        const key = item.treatment_id || item.treatment || '—';
+                        const existing = map.get(key) || { treatment: item.treatment || '—', treatment_id: item.treatment_id || '', totalPaid: 0, totalAmount: 0, lastDate: 0 };
                         existing.totalPaid += (item.tranche_paid || 0);
                         const ts = new Date(item.completed_at).getTime();
                         if (!existing.lastDate || ts > existing.lastDate) {
@@ -505,8 +506,9 @@ const MedecinDashboard = () => {
                         map.set(key, existing);
                     });
 
-                    const treatmentsArr = Array.from(map.entries()).map(([treatment, v]) => ({
-                        treatment,
+                    const treatmentsArr = Array.from(map.values()).map(v => ({
+                        treatment: v.treatment,
+                        treatment_id: v.treatment_id,
                         totalAmount: v.totalAmount || 0,
                         totalPaid: v.totalPaid || 0,
                     }));
@@ -518,11 +520,13 @@ const MedecinDashboard = () => {
                         setTotalAmount(first.totalAmount?.toString() || '');
                         setTotalPaidPreviously(first.totalPaid || 0);
                         setSelectedHistoryTreatment(first.treatment);
+                        setSelectedHistoryTreatmentId(first.treatment_id || null);
                     } else {
                         setTreatment('');
                         setTotalAmount('');
                         setTotalPaidPreviously(0);
                         setSelectedHistoryTreatment(null);
+                        setSelectedHistoryTreatmentId(null);
                     }
                     setTranchePaid('');
                 } else {
@@ -532,6 +536,7 @@ const MedecinDashboard = () => {
                     setTotalPaidPreviously(0);
                     setTranchePaid('');
                     setSelectedHistoryTreatment(null);
+                    setSelectedHistoryTreatmentId(null);
                 }
             } else {
                 setHistoryTreatments([]);
@@ -540,6 +545,7 @@ const MedecinDashboard = () => {
                 setTotalPaidPreviously(0);
                 setTranchePaid('');
                 setSelectedHistoryTreatment(null);
+                setSelectedHistoryTreatmentId(null);
             }
         } catch (err) {
             console.error('Error fetching history:', err);
@@ -549,6 +555,7 @@ const MedecinDashboard = () => {
             setTotalPaidPreviously(0);
             setTranchePaid('');
             setSelectedHistoryTreatment(null);
+            setSelectedHistoryTreatmentId(null);
         }
 
         setCompleteNotes('');
@@ -891,20 +898,22 @@ const MedecinDashboard = () => {
                                                     <div className="flex flex-col gap-2">
                                                         {historyTreatments.map(ht => (
                                                             <Button
-                                                                key={ht.treatment}
-                                                                variant={selectedHistoryTreatment === ht.treatment ? 'secondary' : 'outline'}
+                                                                key={ht.treatment_id || ht.treatment}
+                                                                variant={selectedHistoryTreatmentId === ht.treatment_id ? 'secondary' : 'outline'}
                                                                 className={cn(
                                                                     "justify-between h-14 rounded-2xl border-slate-100 font-bold px-6 group transition-all",
-                                                                    selectedHistoryTreatment === ht.treatment ? "bg-primary/5 border-primary/20 text-primary ring-2 ring-primary/10" : "hover:bg-slate-50"
+                                                                    selectedHistoryTreatmentId === ht.treatment_id ? "bg-primary/5 border-primary/20 text-primary ring-2 ring-primary/10" : "hover:bg-slate-50"
                                                                 )}
                                                                 onClick={() => {
-                                                                    if (selectedHistoryTreatment === ht.treatment) {
+                                                                    if (selectedHistoryTreatmentId === ht.treatment_id) {
                                                                         setSelectedHistoryTreatment(null);
+                                                                        setSelectedHistoryTreatmentId(null);
                                                                         setTreatment('');
                                                                         setTotalAmount('');
                                                                         setTotalPaidPreviously(0);
                                                                     } else {
                                                                         setSelectedHistoryTreatment(ht.treatment);
+                                                                        setSelectedHistoryTreatmentId(ht.treatment_id || null);
                                                                         setTreatment(ht.treatment);
                                                                         setTotalAmount(ht.totalAmount?.toString() || '');
                                                                         setTotalPaidPreviously(ht.totalPaid || 0);

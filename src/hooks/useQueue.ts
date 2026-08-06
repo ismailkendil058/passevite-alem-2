@@ -321,9 +321,19 @@ export function useQueue() {
     }
 
     const nextNumber = maxNumber + 1;
-    // For existing patients: use phone as client_id so their treatments group together in /rendezvous.
-    // For new patients: use a unique UUID so each visit appears as a separate entry in /rendezvous.
-    const clientId = isExistingPatient ? phone.trim() : (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    // Always use phone as client_id so all records for the same patient group into one dossier.
+    // Look up existing client_id first for consistency with previously created records.
+    let clientId = phone.trim();
+    const { data: existingRecord } = await supabase
+      .from('completed_clients')
+      .select('client_id')
+      .eq('phone', phone.trim())
+      .order('completed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existingRecord) {
+      clientId = existingRecord.client_id;
+    }
     const position = entries.length + 1;
 
     const { data, error } = await supabase
@@ -371,7 +381,8 @@ export function useQueue() {
     totalAmount: number,
     tranchePaid: number,
     receptionistId: string,
-    notes?: string
+    notes?: string,
+    treatmentId?: string
   ) => {
     // Find entry from either waiting or in_cabinet list
     const entry = entries.find(e => e.id === entryId) || inCabinetEntries.find(e => e.id === entryId);
@@ -390,6 +401,25 @@ export function useQueue() {
       return { error: null, alreadyCompleted: true };
     }
 
+    // Normalize client_id: look up existing client_id for this phone to ensure dossier grouping.
+    // This prevents creating a new dossier when the patient already has records.
+    let normalizedClientId = entry.client_id;
+    const { data: existingPatient } = await supabase
+      .from('completed_clients')
+      .select('client_id')
+      .eq('phone', entry.phone)
+      .order('completed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existingPatient) {
+      normalizedClientId = existingPatient.client_id;
+    } else {
+      // No existing record — use phone as canonical client_id
+      normalizedClientId = entry.phone.trim();
+    }
+
+    const resolvedTreatmentId = treatmentId || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+
     // NOTE: Do NOT set queue_entry_id here — the FK on completed_clients
     // references queue_entries and will BLOCK the delete of the queue entry below.
     const insertData: any = {
@@ -397,7 +427,7 @@ export function useQueue() {
       client_name: clientName.trim(),
       phone: entry.phone,
       doctor_id: entry.doctor_id,
-      client_id: entry.client_id,
+      client_id: normalizedClientId,
       state: entry.state,
       treatment,
       total_amount: totalAmount,
@@ -405,6 +435,7 @@ export function useQueue() {
       receptionist_id: receptionistId,
       appointment_id: entry.appointment_id || null,
       notes: notes?.trim() || null,
+      treatment_id: resolvedTreatmentId
     };
 
     const duplicateQuery = supabase

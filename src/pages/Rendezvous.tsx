@@ -188,13 +188,34 @@ const Rendezvous = () => {
 
         const isNewEntry = !editingVisit && !visit.id;
 
+        // For new entries, require at least a treatment or appointment to be added
+        if (isNewEntry && !showAddTreatment && !showAddAppt) {
+            toast.error('Veuillez ajouter un traitement ou un rendez-vous');
+            return;
+        }
+
         try {
             // 1. Handle Treatment (completed_clients)
-            // Always create a record for a new entry to establish the patient in the system
-            if (showAddTreatment || editingVisit || isNewEntry) {
+            // Only create a record when the user explicitly adds a treatment or edits an existing one.
+            // Do NOT create a record for new entries that only have an appointment.
+            if (showAddTreatment || editingVisit) {
                 if (!activeSessionId) {
                     toast.error('Aucune séance active. Veuillez ouvrir une séance depuis le Manager.');
                     return;
+                }
+
+                // Look up existing client_id for this phone to maintain dossier grouping
+                let resolvedClientId = visit.client_id;
+                if (!visit.id) {
+                    // New record — try to find existing dossier for this phone
+                    const { data: existingRecord } = await supabase
+                        .from('completed_clients')
+                        .select('client_id')
+                        .eq('phone', visit.phone?.trim())
+                        .order('completed_at', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
+                    resolvedClientId = existingRecord?.client_id || visit.phone?.trim() || '';
                 }
 
                 const treatmentData: any = {
@@ -209,7 +230,7 @@ const Rendezvous = () => {
                     state: visit.state || 'N',
                     receptionist_id: user?.id,
                     session_id: activeSessionId,
-                    client_id: visit.id ? visit.client_id : (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`)
+                    client_id: resolvedClientId
                 };
 
                 let { error } = visit.id
@@ -292,7 +313,8 @@ const Rendezvous = () => {
                 state: latestEntry.state,
                 receptionist_id: user?.id,
                 session_id: activeSessionId,
-                client_id: latestEntry.client_id
+                client_id: latestEntry.client_id,
+                treatment_id: latestEntry.treatment_id
             };
 
             const { error } = await supabase.from('completed_clients').insert(paymentData);
@@ -484,7 +506,8 @@ const Rendezvous = () => {
         const patientData = new Map<string, { latest: CompletedClient, totalPaid: number }>();
 
         clients.forEach(c => {
-            const key = `${(c.client_id || c.phone).trim()}_${(c.treatment || '').toLowerCase().trim()}`;
+            // Group by treatment_id if present, otherwise fall back to name-based key
+            const key = c.treatment_id || `${(c.client_id || c.phone).trim()}_${(c.treatment || '').toLowerCase().trim()}`;
             const existing = patientData.get(key);
             const currentPaid = c.tranche_paid || 0;
 
@@ -834,10 +857,10 @@ const Rendezvous = () => {
 
     const getPatientTreatments = (clientId: string, phone: string) => {
         const entries = clients.filter(c => (c.client_id || c.phone) === clientId);
-        const map = new Map<string, { entries: CompletedClient[]; totalPaid: number; latestTotal: number; latestTs: number }>();
+        const map = new Map<string, { treatment: string; treatment_id: string; entries: CompletedClient[]; totalPaid: number; latestTotal: number; latestTs: number }>();
         entries.forEach(e => {
-            const key = e.treatment || '—';
-            const existing = map.get(key) || { entries: [], totalPaid: 0, latestTotal: 0, latestTs: 0 };
+            const key = e.treatment_id || e.treatment || '—';
+            const existing = map.get(key) || { treatment: e.treatment || '—', treatment_id: e.treatment_id || '', entries: [], totalPaid: 0, latestTotal: 0, latestTs: 0 };
             existing.entries.push(e);
             existing.totalPaid += e.tranche_paid || 0;
             const ts = new Date(e.completed_at).getTime();
@@ -849,13 +872,19 @@ const Rendezvous = () => {
             map.set(key, existing);
         });
 
-        const treatments = Array.from(map.entries()).map(([t, v]) => ({ treatment: t, entries: v.entries.sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()), totalPaid: v.totalPaid, latestTotal: v.latestTotal }));
+        const treatments = Array.from(map.values()).map(v => ({
+            treatment: v.treatment,
+            treatment_id: v.treatment_id,
+            entries: v.entries.sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()),
+            totalPaid: v.totalPaid,
+            latestTotal: v.latestTotal
+        }));
 
         const apptsById = new Map<string, Appointment>();
         appointments.forEach(a => apptsById.set(a.id, a));
 
-        const getApptsForTreatment = (treatment: string) => {
-            const ids = new Set((map.get(treatment)?.entries || []).map(e => (e as any).appointment_id).filter(Boolean));
+        const getApptsForTreatment = (treatmentKey: string) => {
+            const ids = new Set((map.get(treatmentKey)?.entries || []).map(e => (e as any).appointment_id).filter(Boolean));
             const result: Appointment[] = [];
             ids.forEach(id => {
                 const a = apptsById.get(id as string);
@@ -1160,10 +1189,12 @@ const Rendezvous = () => {
                                     {viewingPatient && (() => {
                                         const patientData = getPatientTreatments(viewingPatient.id || viewingPatient.phone, viewingPatient.phone);
                                         const treatments = patientData.treatments;
-                                        const chosen = selectedTreatment || (treatments[0] && treatments[0].treatment) || null;
-                                        const entriesForChosen = treatments.find(t => t.treatment === chosen)?.entries || [];
-                                        const totalPaidForChosen = treatments.find(t => t.treatment === chosen)?.totalPaid || 0;
-                                        const latestTotalForChosen = treatments.find(t => t.treatment === chosen)?.latestTotal || 0;
+                                        const chosen = selectedTreatment || (treatments[0] && (treatments[0].treatment_id || treatments[0].treatment)) || null;
+                                        const selectedGroup = treatments.find(t => (t.treatment_id || t.treatment) === chosen);
+                                        const chosenTreatmentName = selectedGroup?.treatment || '—';
+                                        const entriesForChosen = selectedGroup?.entries || [];
+                                        const totalPaidForChosen = selectedGroup?.totalPaid || 0;
+                                        const latestTotalForChosen = selectedGroup?.latestTotal || 0;
 
                                         return (
                                             <>
@@ -1213,7 +1244,7 @@ const Rendezvous = () => {
                                                                 <div className="text-xs text-muted-foreground">Aucun traitement enregistré</div>
                                                             ) : (
                                                                 treatments.map(t => (
-                                                                    <Button key={t.treatment} variant={chosen === t.treatment ? 'secondary' : 'outline'} size="sm" onClick={() => setSelectedTreatment(t.treatment)}>
+                                                                    <Button key={t.treatment_id || t.treatment} variant={chosen === (t.treatment_id || t.treatment) ? 'secondary' : 'outline'} size="sm" onClick={() => setSelectedTreatment(t.treatment_id || t.treatment)}>
                                                                         <span className="mr-2">{t.treatment}</span>
                                                                         <span className="text-xs">{t.totalPaid.toLocaleString()} / {t.latestTotal.toLocaleString()} DZD</span>
                                                                     </Button>
@@ -1288,7 +1319,7 @@ const Rendezvous = () => {
                                                         <DialogContent className="max-w-md w-[95vw] rounded-2xl p-0 overflow-hidden">
                                                             <DialogHeader className="p-6 pb-2">
                                                                 <DialogTitle className="text-xl font-bold italic text-primary">Nouveau Versement</DialogTitle>
-                                                                <DialogDescription>Enregistrer un paiement pour {chosen}</DialogDescription>
+                                                                <DialogDescription>Enregistrer un paiement pour {chosenTreatmentName}</DialogDescription>
                                                             </DialogHeader>
                                                             <div className="p-6 space-y-4">
                                                                 <div className="space-y-2">

@@ -29,6 +29,7 @@ export type Database = {
           total_amount: number
           tranche_paid: number
           treatment: string
+          treatment_id: string | null
         }
         Insert: {
           client_id: string
@@ -44,6 +45,7 @@ export type Database = {
           total_amount?: number
           tranche_paid?: number
           treatment: string
+          treatment_id?: string | null
         }
         Update: {
           client_id?: string
@@ -59,6 +61,7 @@ export type Database = {
           total_amount?: number
           tranche_paid?: number
           treatment?: string
+          treatment_id?: string | null
         }
         Relationships: [
           {

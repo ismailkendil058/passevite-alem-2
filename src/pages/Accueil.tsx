@@ -243,8 +243,9 @@ const Accueil = () => {
   const [tranchePaid, setTranchePaid] = useState('');
   const [totalPaidPreviously, setTotalPaidPreviously] = useState(0);
   const [completeNotes, setCompleteNotes] = useState('');
-  const [historyTreatments, setHistoryTreatments] = useState<Array<{ treatment: string; totalAmount: number; totalPaid: number }>>([]);
+  const [historyTreatments, setHistoryTreatments] = useState<Array<{ treatment: string; treatment_id: string; totalAmount: number; totalPaid: number }>>([]);
   const [selectedHistoryTreatment, setSelectedHistoryTreatment] = useState<string | null>(null);
+  const [selectedHistoryTreatmentId, setSelectedHistoryTreatmentId] = useState<string | null>(null);
 
   const [hasNextAppt, setHasNextAppt] = useState(false);
   const [nextApptDate, setNextApptDate] = useState<Date | undefined>(undefined);
@@ -474,8 +475,10 @@ const Accueil = () => {
 
     // Fetch history for pre-filling
     try {
-      // Only load previous treatments when this entry is a Rendez-vous (R).
-      if (entry.state === 'R') {
+      // Always load history for any patient — this covers both Rendez-vous (R) and
+      // Nouveau patients who were added via "existing patient" checkbox.
+      // If the patient has no prior records, history will be empty and we reset to defaults.
+      {
         const { data: history } = await (await import('@/integrations/supabase/client')).supabase
           .from('completed_clients')
           .select('*')
@@ -483,11 +486,11 @@ const Accueil = () => {
           .order('completed_at', { ascending: false });
 
         if (history && history.length > 0) {
-          // Aggregate history per treatment: sum paid tranches and keep latest total_amount for that treatment
-          const map = new Map<string, { totalPaid: number; totalAmount: number; lastDate: number }>();
+          // Aggregate history per treatment instance using treatment_id
+          const map = new Map<string, { treatment: string; treatment_id: string; totalPaid: number; totalAmount: number; lastDate: number }>();
           history.forEach((item: any) => {
-            const key = item.treatment || '—';
-            const existing = map.get(key) || { totalPaid: 0, totalAmount: 0, lastDate: 0 };
+            const key = item.treatment_id || item.treatment || '—';
+            const existing = map.get(key) || { treatment: item.treatment || '—', treatment_id: item.treatment_id || '', totalPaid: 0, totalAmount: 0, lastDate: 0 };
             existing.totalPaid += (item.tranche_paid || 0);
             const ts = new Date(item.completed_at).getTime();
             if (!existing.lastDate || ts > existing.lastDate) {
@@ -497,8 +500,9 @@ const Accueil = () => {
             map.set(key, existing);
           });
 
-          const treatmentsArr = Array.from(map.entries()).map(([treatment, v]) => ({
-            treatment,
+          const treatmentsArr = Array.from(map.values()).map(v => ({
+            treatment: v.treatment,
+            treatment_id: v.treatment_id,
             totalAmount: v.totalAmount || 0,
             totalPaid: v.totalPaid || 0,
           }));
@@ -511,29 +515,25 @@ const Accueil = () => {
             setTotalAmount(first.totalAmount?.toString() || '');
             setTotalPaidPreviously(first.totalPaid || 0);
             setSelectedHistoryTreatment(first.treatment);
+            setSelectedHistoryTreatmentId(first.treatment_id || null);
           } else {
             setTreatment('');
             setTotalAmount('');
             setTotalPaidPreviously(0);
             setSelectedHistoryTreatment(null);
+            setSelectedHistoryTreatmentId(null);
           }
           setTranchePaid('');
         } else {
+          // New patient with no history — reset all fields
           setHistoryTreatments([]);
           setTreatment('');
           setTotalAmount('');
           setTotalPaidPreviously(0);
           setTranchePaid('');
           setSelectedHistoryTreatment(null);
+          setSelectedHistoryTreatmentId(null);
         }
-      } else {
-        // New patient: do not show or prefill any previous totals
-        setHistoryTreatments([]);
-        setTreatment('');
-        setTotalAmount('');
-        setTotalPaidPreviously(0);
-        setTranchePaid('');
-        setSelectedHistoryTreatment(null);
       }
 
       // 3. APPLY DOCTOR HANDOFF (OVERRIDE HISTORY IF DOCTOR PROVIDED DATA)
@@ -547,6 +547,8 @@ const Accueil = () => {
         setTreatment(entry.treatment);
         setTotalAmount(entry.total_amount?.toString() || '');
         setSelectedHistoryTreatment(entry.treatment);
+        // A doctor handoff creates/proposes a new treatment act, so it has no treatment_id yet
+        setSelectedHistoryTreatmentId(null);
       }
       if (entry.handoff_notes) {
         setCompleteNotes(entry.handoff_notes);
@@ -558,6 +560,7 @@ const Accueil = () => {
       console.error('Error fetching history:', err);
       // fallback to safe defaults
       setCompleteNotes('');
+      setSelectedHistoryTreatmentId(null);
     }
 
     setHasNextAppt(false);
@@ -596,7 +599,8 @@ const Accueil = () => {
         parseFloat(totalAmount) || 0,
         parseFloat(tranchePaid) || 0,
         user.id,
-        completeNotes
+        completeNotes,
+        selectedHistoryTreatmentId || undefined
       );
       if (error) {
         toast.error('Erreur lors de la validation du patient');
@@ -1376,18 +1380,20 @@ const Accueil = () => {
                   <div className="flex flex-col gap-2">
                     {historyTreatments.map(ht => (
                       <Button
-                        key={ht.treatment}
-                        variant={selectedHistoryTreatment === ht.treatment ? 'secondary' : 'outline'}
+                        key={ht.treatment_id || ht.treatment}
+                        variant={selectedHistoryTreatmentId === ht.treatment_id ? 'secondary' : 'outline'}
                         size="sm"
                         className="justify-between"
                         onClick={() => {
-                          if (selectedHistoryTreatment === ht.treatment) {
+                          if (selectedHistoryTreatmentId === ht.treatment_id) {
                             setSelectedHistoryTreatment(null);
+                            setSelectedHistoryTreatmentId(null);
                             setTreatment('');
                             setTotalAmount('');
                             setTotalPaidPreviously(0);
                           } else {
                             setSelectedHistoryTreatment(ht.treatment);
+                            setSelectedHistoryTreatmentId(ht.treatment_id || null);
                             setTreatment(ht.treatment);
                             setTotalAmount(ht.totalAmount?.toString() || '');
                             setTotalPaidPreviously(ht.totalPaid || 0);
